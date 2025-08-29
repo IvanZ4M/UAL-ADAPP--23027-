@@ -1,17 +1,13 @@
 from rapidfuzz import process, fuzz
-import pyodbc
+import mysql.connector
 
-def connect_to_azure_sql(server, database, username, password):
-    connection_string = (
-        f"DRIVER={{ODBC Driver 17 for SQL Server}};"
-        f"SERVER={server};"
-        f"DATABASE={database};"
-        f"UID={username};"
-        f"PWD={password};"
-        "Encrypt=yes;"
-        "TrustServerCertificate=yes;"
+def connect_to_mysql(host, database, user, password=""):
+    return mysql.connector.connect(
+        host=host,
+        user=user,
+        password=password,
+        database=database
     )
-    return pyodbc.connect(connection_string)
 
 def fuzzy_match(queryRecord, choices, score_cutoff=0):
     scorers = [fuzz.WRatio, fuzz.QRatio, fuzz.token_set_ratio, fuzz.ratio]
@@ -68,10 +64,10 @@ def fuzzy_match(queryRecord, choices, score_cutoff=0):
 
 
 def execute_dynamic_matching(params_dict, score_cutoff=0):
-    conn = connect_to_azure_sql(
-        server=params_dict.get("server", ""),
+    conn = connect_to_mysql(
+        host=params_dict.get("host", "localhost"),
         database=params_dict.get("database", ""),
-        username=params_dict.get("username", ""),
+        user=params_dict.get("user", "root"),
         password=params_dict.get("password", "")
     )
     cursor = conn.cursor()
@@ -82,8 +78,8 @@ def execute_dynamic_matching(params_dict, score_cutoff=0):
     src_cols = ", ".join(params_dict['src_dest_mappings'].keys())
     dest_cols = ", ".join(params_dict['src_dest_mappings'].values())
 
-    sql_source = f"SELECT {src_cols} FROM {params_dict['sourceSchema']}.{params_dict['sourceTable']}"
-    sql_dest   = f"SELECT {dest_cols} FROM {params_dict['destSchema']}.{params_dict['destTable']}"
+    sql_source = f"SELECT {src_cols} FROM {params_dict['sourceTable']}"
+    sql_dest   = f"SELECT {dest_cols} FROM {params_dict['destTable']}"
 
     cursor.execute(sql_source)
     src_rows = cursor.fetchall()
@@ -119,18 +115,18 @@ def execute_dynamic_matching(params_dict, score_cutoff=0):
     return matching_records
 
 
+# Ejemplo de configuración para tus tablas
 params_dict = {
-    "server": "tu_server",
-    "database": "tu_database",
-    "username": "tu_usuario",
-    "password": "tu_contraseña",
-    "sourceSchema": "dbo",
-    "sourceTable": "tabla_origen",
-    "destSchema": "dbo",
-    "destTable": "tabla_destino",
+    "host": "localhost",
+    "database": "crm",     # aquí se conecta a la BD de origen
+    "user": "root",
+    "password": "",        # sin contraseña
+
+    "sourceTable": "Clientes",
+    "destTable": "dbo.Usuarios",  # si quieres cruzar con la otra BD, se puede usar "dbo.Usuarios"
     "src_dest_mappings": {
         "nombre": "first_name",
-        "Ciudad": "City"
+        "apellido": "last_name"
     }
 }
 

@@ -2,7 +2,7 @@ import csv
 import mysql.connector
 from datetime import datetime
 
-# Insertar en tabla Clientes (DB crm)
+# Insertar en tabla Clientes 
 conn_crm = mysql.connector.connect(
     host="localhost",
     user="root",
@@ -37,7 +37,7 @@ cursor_crm.close()
 conn_crm.close()
 
 
-# Insertar en tabla Usuarios (DB dbo)
+# Insertar en tabla Usuarios 
 conn_dbo = mysql.connector.connect(
     host="localhost",
     user="root",

@@ -115,20 +115,20 @@ def execute_dynamic_matching(params_dict, score_cutoff=0):
     return matching_records
 
 
-# Ejemplo de configuración para tus tablas
 params_dict = {
     "host": "localhost",
-    "database": "crm",     # aquí se conecta a la BD de origen
+    "database": "crm",    
     "user": "root",
-    "password": "",        # sin contraseña
+    "password": "",     
 
     "sourceTable": "Clientes",
-    "destTable": "dbo.Usuarios",  # si quieres cruzar con la otra BD, se puede usar "dbo.Usuarios"
+    "destTable": "dbo.Usuarios", 
     "src_dest_mappings": {
         "nombre": "first_name",
         "apellido": "last_name"
     }
 }
 
-resultados = execute_dynamic_matching(params_dict, score_cutoff=80)
-print(resultados)
+resultados = execute_dynamic_matching(params_dict, score_cutoff=70)
+filtro= [r for r in resultados if r.get('score', 0) >= 70]
+print(filtro)

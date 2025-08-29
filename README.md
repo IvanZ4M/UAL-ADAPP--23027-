@@ -69,4 +69,32 @@ Compara dinámicamente dos tablas en **Azure SQL** y devuelve las mejores coinci
   - Puntaje de similitud.
   - Tablas origen y destino.
 
+### **4. Inserción de Datos en Tablas MySQL (`insertMysql.py`)**
+Este script inserta datos en las tablas `Clientes` y `Usuarios` de dos bases de datos MySQL (`crm` y `dbo`).
+
+#### **Cambios Realizados:**
+1. **Uso de bloques `with` para manejar conexiones a la base de datos:**
+   - Las conexiones a las bases de datos ahora se manejan automáticamente, asegurando que se cierren correctamente incluso si ocurre un error.
+
+2. **Centralización del manejo de errores:**
+   - Los errores durante la inserción de datos se manejan en un único bloque `try-except` para cada tabla, mejorando la legibilidad y el control de excepciones.
+
+#### **Flujo del Script:**
+1. **Inserción en la tabla `Clientes`:**
+   - Lee datos del archivo `clientes.csv`.
+   - Convierte la columna `fecha_registro` al formato de fecha/hora.
+   - Inserta los datos en la tabla `Clientes` de la base de datos `crm`.
+
+2. **Inserción en la tabla `Usuarios`:**
+   - Lee datos del archivo `usuarios.csv`.
+   - Convierte la columna `fecha_creacion` al formato de fecha/hora.
+   - Inserta los datos en la tabla `Usuarios` de la base de datos `dbo`.
+
+#### **Archivos de Entrada:**
+- `clientes.csv`: Contiene los datos de clientes.
+- `usuarios.csv`: Contiene los datos de usuarios.
+
+#### **Errores:**
+- Si ocurre un error durante la lectura o inserción de datos, se imprime un mensaje indicando el problema.
+
 ---

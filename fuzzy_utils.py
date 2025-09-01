@@ -124,3 +124,8 @@ def display_results(resultados, output_format='dataframe'):
         return resultados
     else:
         raise ValueError("output_format debe ser 'dataframe' o 'dict'")
+
+def export_results_to_csv(resultados, filename="resultados.csv"):
+    df = pd.DataFrame(resultados)
+    df.to_csv(filename, index=False)
+    print(f"Resultados exportados a {filename}")

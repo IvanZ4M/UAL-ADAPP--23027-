@@ -1,4 +1,4 @@
-from fuzzy_utils import execute_dynamic_matching, display_results
+from fuzzy_utils import execute_dynamic_matching, display_results, export_results_to_csv
 
 params_dict = {
     "host": "localhost",
@@ -23,3 +23,10 @@ if formato not in ['dataframe', 'dict']:
     formato = 'dataframe'
 
 display_results(filtro, output_format=formato)
+
+exportar = input("¿Deseas exportar los resultados a un archivo CSV? (s/n): ").strip().lower()
+if exportar == 's':
+    nombre_archivo = input("Escribe el nombre del archivo CSV (ejemplo: resultados.csv): ").strip()
+    if not nombre_archivo:
+        nombre_archivo = "resultados.csv"
+    export_results_to_csv(filtro, filename=nombre_archivo)

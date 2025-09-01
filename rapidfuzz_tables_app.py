@@ -1,5 +1,4 @@
-from fuzzy_utils import execute_dynamic_matching
-import pandas as pd
+from fuzzy_utils import execute_dynamic_matching, display_results
 
 params_dict = {
     "host": "localhost",
@@ -18,7 +17,9 @@ params_dict = {
 resultados = execute_dynamic_matching(params_dict, score_cutoff=70)
 filtro = [r for r in resultados if r.get('score', 0) >= 70]
 
-df = pd.DataFrame(filtro)
-print(df)
+formato = input("¿Cómo deseas mostrar los resultados? Escribe 'dataframe' o 'dict': ").strip().lower()
+if formato not in ['dataframe', 'dict']:
+    print("Formato no válido. Se usará 'dataframe' por defecto.")
+    formato = 'dataframe'
 
-
+display_results(filtro, output_format=formato)

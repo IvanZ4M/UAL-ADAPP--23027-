@@ -1,5 +1,6 @@
 from rapidfuzz import process, fuzz
 import mysql.connector
+import pandas as pd
 
 def connect_to_mysql(host, database, user, password=""):
     return mysql.connector.connect(
@@ -112,3 +113,14 @@ def execute_dynamic_matching(params_dict, score_cutoff=0):
         matching_records.append(dict_query_records)
 
     return matching_records
+
+def display_results(resultados, output_format='dataframe'):
+    if output_format == 'dataframe':
+        df = pd.DataFrame(resultados)
+        print(df)
+        return df
+    elif output_format == 'dict':
+        print(resultados)
+        return resultados
+    else:
+        raise ValueError("output_format debe ser 'dataframe' o 'dict'")

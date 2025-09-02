@@ -1,0 +1,6 @@
+nombre,apellido,match_query,match_result,score,match_result_values,destTable,sourceTable
+Michael,Jones,MichaelJones,MichaelRobinson,74.07407407407408,"{'first_name': 'Michael', 'last_name': 'Robinson'}",dbo.Usuarios,Clientes
+Herbert,Davis,HerbertDavis,RobertDavis,86.95652173913044,"{'first_name': 'Robert', 'last_name': 'Davis'}",dbo.Usuarios,Clientes
+Christian,Martin,ChristianMartin,ChristinaMiranda,70.96774193548387,"{'first_name': 'Christina', 'last_name': 'Miranda'}",dbo.Usuarios,Clientes
+Regina,Jones,ReginaJones,AdrianJones,72.72727272727273,"{'first_name': 'Adrian', 'last_name': 'Jones'}",dbo.Usuarios,Clientes
+Christopher,Morales,ChristopherMorales,ChristopherMcdonald,81.08108108108108,"{'first_name': 'Christopher', 'last_name': 'Mcdonald'}",dbo.Usuarios,Clientes

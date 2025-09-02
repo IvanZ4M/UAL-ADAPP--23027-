@@ -1,6 +1,7 @@
 from rapidfuzz import process, fuzz
 import mysql.connector
 import pandas as pd
+import os
 
 def connect_to_mysql(host, database, user, password=""):
     return mysql.connector.connect(
@@ -126,6 +127,17 @@ def display_results(resultados, output_format='dataframe'):
         raise ValueError("output_format debe ser 'dataframe' o 'dict'")
 
 def export_results_to_csv(resultados, filename="resultados.csv"):
+    carpeta = "exportados"
+    os.makedirs(carpeta, exist_ok=True)
+    ruta_completa = os.path.join(carpeta, filename)
     df = pd.DataFrame(resultados)
-    df.to_csv(filename, index=False)
-    print(f"Resultados exportados a {filename}")
+    df.to_csv(ruta_completa, index=False)
+    print(f"Resultados exportados a {ruta_completa}")
+
+def export_results_to_excel(resultados, filename="resultados.xlsx"):
+    carpeta = "exportados"
+    os.makedirs(carpeta, exist_ok=True)
+    ruta_completa = os.path.join(carpeta, filename)
+    df = pd.DataFrame(resultados)
+    df.to_excel(ruta_completa, index=False)
+    print(f"Resultados exportados a {ruta_completa}")

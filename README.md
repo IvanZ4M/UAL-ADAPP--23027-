@@ -98,3 +98,76 @@ Este script inserta datos en las tablas `Clientes` y `Usuarios` de dos bases de 
 - Si ocurre un error durante la lectura o inserción de datos, se imprime un mensaje indicando el problema.
 
 ---
+
+
+### **Procedimientos Almacenados Implementados**
+
+#### **1. `sp_InsertClientesCSV_crm_001`**
+Inserta o actualiza registros en la tabla `Clientes` de la base de datos `crm`.
+
+**Parámetros:**
+- `p_cliente_id` INT → ID del cliente
+- `p_nombre` VARCHAR(100) → Nombre del cliente
+- `p_apellido` VARCHAR(100) → Apellido del cliente
+- `p_email` VARCHAR(150) → Email del cliente
+- `p_fecha_registro` DATETIME → Fecha de registro
+
+**Funcionalidad:**
+- Si el cliente_id no existe, inserta un nuevo registro
+- Si el cliente_id ya existe, actualiza el registro existente
+- Maneja transacciones y errores con rollback automático
+
+#### **2. `sp_InsertUsuariosCSV_dbo_001`**
+Inserta o actualiza registros en la tabla `Usuarios` de la base de datos `dbo`.
+
+**Parámetros:**
+- `p_userId` INT → ID del usuario
+- `p_username` VARCHAR(100) → Nombre de usuario
+- `p_first_name` VARCHAR(100) → Nombre
+- `p_last_name` VARCHAR(100) → Apellido
+- `p_email` VARCHAR(150) → Email
+- `p_password_hash` VARCHAR(255) → Hash de contraseña
+- `p_rol` VARCHAR(50) → Rol del usuario
+- `p_fecha_creacion` DATETIME → Fecha de creación
+
+**Funcionalidad:**
+- Si el userId no existe, inserta un nuevo registro
+- Si el userId ya existe, actualiza el registro existente
+- Maneja transacciones y errores con rollback automático
+
+---
+
+### **Inserción de Datos en Tablas MySQL (`insertMysql.py`)**
+Este script inserta datos en las tablas `Clientes` y `Usuarios` de dos bases de datos MySQL (`crm` y `dbo`) utilizando procedimientos almacenados.
+
+#### **Cambios Realizados:**
+1. **Uso de procedimientos almacenados:** 
+   - Reemplazo de inserciones directas con llamadas a procedimientos almacenados
+   - Mejor manejo de transacciones y errores
+
+2. **Lógica de upsert (insert/update):**
+   - Los procedimientos verifican si el registro existe antes de insertar
+   - Si existe, actualizan el registro en lugar de insertar uno nuevo
+
+#### **Flujo del Script:**
+1. **Inserción en la tabla `Clientes`:**
+   - Lee datos del archivo `clientes.csv`
+   - Convierte la columna `fecha_registro` al formato de fecha/hora
+   - Llama al procedimiento `sp_InsertClientesCSV_crm_27551` para cada registro
+
+2. **Inserción en la tabla `Usuarios`:**
+   - Lee datos del archivo `usuarios.csv`
+   - Convierte la columna `fecha_creacion` al formato de fecha/hora
+   - Llama al procedimiento `sp_InsertUsuariosCSV_dbo_27551` para cada registro
+
+#### **Archivos de Entrada:**
+- `clientes.csv`: Contiene los datos de clientes
+- `usuarios.csv`: Contiene los datos de usuarios
+
+---
+
+### **Instrucciones de Uso:**
+1. Ejecutar los scripts SQL para crear los procedimientos almacenados en las bases de datos respectivas
+2. Asegurarse de que los archivos CSV estén en el mismo directorio que el script Python
+3. Ejecutar el script Python `insertMysql.py`
+

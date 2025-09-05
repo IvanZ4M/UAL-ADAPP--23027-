@@ -13,7 +13,7 @@ def importar_csv_a_mysql(ruta_csv, params_dict):
     if not os.path.exists(ruta_csv):
         print(f"Error: El archivo '{ruta_csv}' no existe.")
         return
-
+    
     try:
         df = pd.read_csv(ruta_csv)
     except Exception as e:

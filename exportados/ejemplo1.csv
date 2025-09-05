@@ -1,2 +1,0 @@
-nombre,apellido,match_query,match_result,score,match_result_values,destTable,sourceTable
-Michael,Jones,MichaelJones,MichaelRobinson,74.07407407407408,"{'first_name': 'Michael', 'last_name': 'Robinson'}",dbo.Usuarios,Clientes

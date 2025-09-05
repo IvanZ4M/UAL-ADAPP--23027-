@@ -1,11 +1,84 @@
-from fuzzy_utils import execute_dynamic_matching, display_results, export_results_to_csv, export_results_to_excel
+import pandas as pd
+import mysql.connector
+import os
+from fuzzy_utils import execute_dynamic_matching, display_results, export_results_to_csv, export_results_to_excel, separar_registros_coincidentes
+
+def importar_csv_a_mysql(ruta_csv, params_dict):
+    """
+    Importa un archivo CSV y guarda los datos en la tabla 'clientes10'.
+    Si la tabla no existe, se crea. Valida el archivo antes de importarlo.
+    """
+    nombre_tabla = "clientes10" 
+
+    if not os.path.exists(ruta_csv):
+        print(f"Error: El archivo '{ruta_csv}' no existe.")
+        return
+
+    try:
+        df = pd.read_csv(ruta_csv)
+    except Exception as e:
+        print(f"Error al leer el archivo CSV: {e}")
+        return
+
+    columnas_requeridas = {'nombre', 'apellido', 'email'}
+    if not columnas_requeridas.issubset(df.columns):
+        print(f"Error: El archivo '{ruta_csv}' no tiene las columnas necesarias ({', '.join(columnas_requeridas)}).")
+        return
+
+    conn = mysql.connector.connect(
+        host=params_dict["host"],
+        user=params_dict["user"],
+        password=params_dict["password"],
+        database=params_dict["database"]
+    )
+    cursor = conn.cursor()
+
+    sql_create = f"""
+    CREATE TABLE IF NOT EXISTS `{nombre_tabla}` (
+        cliente_id INT AUTO_INCREMENT PRIMARY KEY,
+        nombre VARCHAR(100),
+        apellido VARCHAR(100),
+        email VARCHAR(150) UNIQUE,
+        FechaRegistro TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+    """
+    cursor.execute(sql_create)
+
+    for _, row in df.iterrows():
+        nombre = row.get('nombre', None)
+        apellido = row.get('apellido', None)
+        email = row.get('email', None)
+
+        sql_insert = f"""
+        INSERT INTO `{nombre_tabla}` (nombre, apellido, email)
+        VALUES (%s, %s, %s)
+        """
+        try:
+            cursor.execute(sql_insert, (nombre, apellido, email))
+        except mysql.connector.errors.IntegrityError as e:
+            print(f"Registro ignorado: email duplicado o inválido (email: {email})")
+
+    conn.commit()
+    conn.close()
+    print(f"Archivo '{ruta_csv}' importado exitosamente a la tabla '{nombre_tabla}'.")
+
+print("¿Deseas importar un archivo CSV a la base de datos? (s/n): ", end="")
+importar = input().strip().lower()
+if importar == 's':
+    ruta_csv = input("Escribe la ruta del archivo CSV a importar: ").strip()
+    importar_csv_a_mysql(ruta_csv, {
+        "host": "localhost",
+        "database": "crm",
+        "user": "root",
+        "password": ""
+    })
+    print("Puedes continuar usando el sistema con la tabla 'clientes10' si lo deseas.\n")
 
 params_dict = {
     "host": "localhost",
     "database": "crm",    
     "user": "root",
     "password": "",     
-
     "sourceTable": "Clientes",
     "destTable": "dbo.Usuarios", 
     "src_dest_mappings": {
@@ -17,44 +90,46 @@ params_dict = {
 resultados = execute_dynamic_matching(params_dict, score_cutoff=70)
 filtro = [r for r in resultados if r.get('score', 0) >= 70]
 
-# Convertir score a porcentaje
 for fila in filtro:
     if 'score' in fila:
         fila['score'] = f"{round(float(fila['score']), 2)}%"
+
+coincidentes, no_coincidentes = separar_registros_coincidentes(filtro)
 
 formato = input("¿Cómo deseas mostrar los resultados? Escribe 'dataframe' o 'dict': ").strip().lower()
 if formato not in ['dataframe', 'dict']:
     print("Formato no válido. Se usará 'dataframe' por defecto.")
     formato = 'dataframe'
 
-display_results(filtro, output_format=formato)
+display_results(coincidentes, output_format=formato)
 
-if not filtro:
-    print("No hay resultados para exportar. La exportación ha sido cancelada.")
+if not coincidentes:
+    print("No hay registros coincidentes para exportar. La exportación ha sido cancelada.")
 else:
-    exportar = input("¿Deseas exportar los resultados? (s/n): ").strip().lower()
+    exportar = input("¿Deseas exportar los registros coincidentes? (s/n): ").strip().lower()
     if exportar == 's':
-        columnas_disponibles = list(filtro[0].keys())
+        columnas_disponibles = list(coincidentes[0].keys())
         print("Columnas disponibles para exportar:")
         print(", ".join(columnas_disponibles))
         columnas_seleccionadas = input("Escribe las columnas que deseas exportar separadas por coma (ejemplo: nombre,apellido,score): ").strip()
         columnas_seleccionadas = [col.strip() for col in columnas_seleccionadas.split(",") if col.strip() in columnas_disponibles]
 
+        if columnas_seleccionadas == ['score']:
+            print("No puedes exportar solo la columna 'score'. Selecciona al menos una columna adicional.")
+            exit()
+
         if not columnas_seleccionadas:
             print("No se seleccionaron columnas válidas. El sistema ha terminado y no se exportó ningún archivo.")
             exit()
 
-        # Agrega 'score' obligatoriamente si hay al menos una columna válida
         if 'score' not in columnas_seleccionadas and 'score' in columnas_disponibles:
             columnas_seleccionadas.append('score')
 
-        # Si el usuario selecciona "nombre", crea columna nombre completo
         crear_nombre_completo = False
         if 'nombre' in columnas_seleccionadas:
             crear_nombre_completo = True
-            # Elimina 'nombre' y 'apellido' si están en la selección
             columnas_seleccionadas = [col for col in columnas_seleccionadas if col != 'nombre' and col != 'apellido']
-            columnas_seleccionadas.insert(0, 'nombre_completo')  # Puedes cambiar el orden si lo prefieres
+            columnas_seleccionadas.insert(0, 'nombre_completo') 
 
         cambiar_nombres = input("¿Deseas cambiar el nombre de alguna columna seleccionada? (s/n): ").strip().lower()
         nombres_columnas = columnas_seleccionadas.copy()
@@ -68,19 +143,18 @@ else:
         nombre_archivo = input("Escribe el nombre del archivo (ejemplo: resultados.csv o resultados.xlsx): ").strip()
         if not nombre_archivo:
             nombre_archivo = f"resultados.{tipo_archivo}"
-        limite = input(f"¿Cuántas filas deseas exportar? (máximo {len(filtro)}): ").strip()
+        limite = input(f"¿Cuántas filas deseas exportar? (máximo {len(coincidentes)}): ").strip()
         try:
             limite = int(limite)
-            if limite < 1 or limite > len(filtro):
+            if limite < 1:
                 print("No se puede exportar un archivo vacío o fuera de rango. La exportación ha sido cancelada.")
                 datos_a_exportar = []
             else:
-                datos_a_exportar = filtro[:limite]
+                datos_a_exportar = coincidentes[:limite]
         except ValueError:
-            print(f"Valor no válido. Se exportarán todas las filas ({len(filtro)}).")
-            datos_a_exportar = filtro
+            print(f"Valor no válido. Se exportarán todas las filas coincidentes ({len(coincidentes)}).")
+            datos_a_exportar = coincidentes
 
-        # Filtrar y renombrar columnas, y crear nombre completo si corresponde
         datos_a_exportar_final = []
         for fila in datos_a_exportar:
             nueva_fila = {}
@@ -101,3 +175,12 @@ else:
             export_results_to_excel(datos_a_exportar_final, filename=nombre_archivo)
         else:
             print("Formato de exportación no válido. No se exportarán los resultados.")
+
+if no_coincidentes:
+    reparar = input("¿Deseas exportar los registros no coincidentes (score < 97%)? (s/n): ").strip().lower()
+    if reparar == 's':
+        nombre_archivo_reparar = input("Escribe el nombre del archivo para los registros no coincidentes (ejemplo: reparar.csv): ").strip()
+        if not nombre_archivo_reparar:
+            nombre_archivo_reparar = "registros_a_reparar.csv"
+        export_results_to_csv(no_coincidentes, filename=nombre_archivo_reparar)
+        print(f"Registros no coincidentes exportados a {nombre_archivo_reparar}.")

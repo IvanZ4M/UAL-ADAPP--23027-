@@ -141,3 +141,21 @@ def export_results_to_excel(resultados, filename="resultados.xlsx"):
     df = pd.DataFrame(resultados)
     df.to_excel(ruta_completa, index=False)
     print(f"Resultados exportados a {ruta_completa}")
+
+def separar_registros_coincidentes(resultados):
+    coincidentes = []
+    no_coincidentes = []
+    for fila in resultados:
+        score = fila.get('score', 0)
+        if isinstance(score, str) and score.endswith('%'):
+            try:
+                score_val = float(score.replace('%', ''))
+            except ValueError:
+                score_val = 0
+        else:
+            score_val = float(score)
+        if score_val >= 97.0:
+            coincidentes.append(fila)
+        else:
+            no_coincidentes.append(fila)
+    return coincidentes, no_coincidentes

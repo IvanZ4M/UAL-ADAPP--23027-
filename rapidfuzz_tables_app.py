@@ -1,7 +1,7 @@
 import pandas as pd
 import mysql.connector
 import os
-from fuzzy_utils import execute_dynamic_matching, display_results, export_results_to_csv, export_results_to_excel, separar_registros_coincidentes
+from fuzzy_utils import execute_dynamic_matching, display_results, export_results_to_csv, export_results_to_excel, separar_registros_coincidentes, insertar_coincidentes_en_db, mostrar_coincidentes_recientes
 
 def importar_csv_a_mysql(ruta_csv, params_dict):
     """
@@ -48,13 +48,8 @@ def importar_csv_a_mysql(ruta_csv, params_dict):
         nombre = row.get('nombre', None)
         apellido = row.get('apellido', None)
         email = row.get('email', None)
-
-        sql_insert = f"""
-        INSERT INTO `{nombre_tabla}` (nombre, apellido, email)
-        VALUES (%s, %s, %s)
-        """
         try:
-            cursor.execute(sql_insert, (nombre, apellido, email))
+            cursor.callproc('sp_InsertCliente10', [nombre, apellido, email])
         except mysql.connector.errors.IntegrityError as e:
             print(f"Registro ignorado: email duplicado o inválido (email: {email})")
 
@@ -62,17 +57,54 @@ def importar_csv_a_mysql(ruta_csv, params_dict):
     conn.close()
     print(f"Archivo '{ruta_csv}' importado exitosamente a la tabla '{nombre_tabla}'.")
 
-print("¿Deseas importar un archivo CSV a la base de datos? (s/n): ", end="")
+
+# Mensaje inicial y visualización de tablas
+
+print("\n" + "+" + "="*58 + "+")
+print("|{:^58}|".format("SISTEMA DE GESTIÓN DE DATOS - UAL-ADAPP"))
+print("+" + "="*58 + "+\n")
+print("\033[1m\033[92m✔ Los registros han sido insertados en la base de datos.\033[0m\n")
+print("¿Qué tablas deseas visualizar en la terminal? Puedes elegir varias separadas por coma.")
+print("\033[1mOpciones disponibles: Coincidentes, clientes10\033[0m")
+print("- Escribe 'coincidentes' para ver los registros exportados.")
+print("- Escribe 'clientes10' para ver los registros importados.")
+print("- Puedes escribir ambas separadas por coma (ejemplo: coincidentes,clientes10)")
+print("-")
+tablas_ver = input("\n\033[94mTablas a mostrar:\033[0m ").strip().lower().replace(' ', '')
+tablas = [t for t in tablas_ver.split(',') if t]
+conn = mysql.connector.connect(host="localhost", user="root", password="", database="crm")
+cursor = conn.cursor(dictionary=True)
+for tabla in tablas:
+    if tabla in ["coincidentes", "clientes10"]:
+        try:
+            cursor.execute(f"SELECT * FROM {tabla} LIMIT 20")
+            rows = cursor.fetchall()
+            print("\n" + "-"*60)
+            print(f"\033[1mMostrando los primeros 20 registros de la tabla '{tabla}':\033[0m")
+            print("-"*60)
+            if rows:
+                df = pd.DataFrame(rows)
+                print(df)
+            else:
+                print("(Sin registros)")
+        except Exception as e:
+            print(f"\033[91mError mostrando la tabla {tabla}: {e}\033[0m")
+cursor.close()
+conn.close()
+print("\n" + "+" + "-"*58 + "+\n")
+
+print("\033[1m¿Deseas importar un archivo CSV a la base de datos? (s/n):\033[0m ", end="")
 importar = input().strip().lower()
 if importar == 's':
-    ruta_csv = input("Escribe la ruta del archivo CSV a importar: ").strip()
+    print("\033[96mEscribe la ruta del archivo CSV a importar:\033[0m", end=" ")
+    ruta_csv = input().strip()
     importar_csv_a_mysql(ruta_csv, {
         "host": "localhost",
         "database": "crm",
         "user": "root",
         "password": ""
     })
-    print("Puedes continuar usando el sistema con la tabla 'clientes10' si lo deseas.\n")
+    print("\033[92m✔ Archivo importado. Puedes continuar usando el sistema con la tabla 'clientes10'.\033[0m\n")
 
 params_dict = {
     "host": "localhost",
@@ -155,6 +187,7 @@ else:
             print(f"Valor no válido. Se exportarán todas las filas coincidentes ({len(coincidentes)}).")
             datos_a_exportar = coincidentes
 
+
         datos_a_exportar_final = []
         for fila in datos_a_exportar:
             nueva_fila = {}
@@ -167,14 +200,44 @@ else:
                     nueva_fila[nombres_columnas[i]] = fila.get(col, '')
             datos_a_exportar_final.append(nueva_fila)
 
+
         if not datos_a_exportar_final:
             print("No hay filas seleccionadas para exportar. La exportación ha sido cancelada.")
-        elif tipo_archivo == 'csv':
-            export_results_to_csv(datos_a_exportar_final, filename=nombre_archivo)
-        elif tipo_archivo == 'xlsx':
-            export_results_to_excel(datos_a_exportar_final, filename=nombre_archivo)
         else:
-            print("Formato de exportación no válido. No se exportarán los resultados.")
+            # Exportar archivo solo con las columnas seleccionadas
+            if tipo_archivo == 'csv':
+                export_results_to_csv(datos_a_exportar_final, filename=nombre_archivo)
+            elif tipo_archivo == 'xlsx':
+                export_results_to_excel(datos_a_exportar_final, filename=nombre_archivo)
+            else:
+                print("Formato de exportación no válido. No se exportarán los resultados.")
+
+
+            insertar_coincidentes_en_db(datos_a_exportar_final)
+            print("\nTodos los datos seleccionados han sido insertados en la tabla Coincidentes de la base de datos CRM.")
+
+            # Preguntar al usuario qué tablas quiere ver
+            print("¿Qué tablas deseas visualizar en la terminal? Puedes elegir varias separadas por coma.")
+            print("Opciones disponibles: Coincidentes, clientes10")
+            tablas_ver = input("Escribe el/los nombre(s) de las tablas a mostrar: ").strip().lower().replace(' ', '')
+            tablas = [t for t in tablas_ver.split(',') if t]
+            conn = mysql.connector.connect(host="localhost", user="root", password="", database="crm")
+            cursor = conn.cursor(dictionary=True)
+            for tabla in tablas:
+                if tabla in ["coincidentes", "clientes10"]:
+                    try:
+                        cursor.execute(f"SELECT * FROM {tabla} LIMIT 20")
+                        rows = cursor.fetchall()
+                        print(f"\n--- Mostrando los primeros 20 registros de la tabla '{tabla}' ---")
+                        if rows:
+                            df = pd.DataFrame(rows)
+                            print(df)
+                        else:
+                            print("(Sin registros)")
+                    except Exception as e:
+                        print(f"Error mostrando la tabla {tabla}: {e}")
+            cursor.close()
+            conn.close()
 
 if no_coincidentes:
     reparar = input("¿Deseas exportar los registros no coincidentes (score < 97%)? (s/n): ").strip().lower()

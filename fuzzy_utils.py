@@ -1,3 +1,49 @@
+def insertar_coincidentes_en_db(coincidentes, host="localhost", user="root", password="", database="crm"):
+    import mysql.connector
+    conn = mysql.connector.connect(host=host, user=user, password=password, database=database)
+    cursor = conn.cursor()
+    for fila in coincidentes:
+        # Limpiar y convertir el campo score (obligatorio)
+        score_val = fila.get('score', 0)
+        if isinstance(score_val, str):
+            score_val = score_val.replace('%', '').strip()
+            try:
+                score_val = float(score_val)
+            except ValueError:
+                score_val = 0.0
+        # Usar None si el campo no existe
+        def safe_get(key):
+            return fila[key] if key in fila else None
+        try:
+            cursor.callproc('sp_InsertCoincidente', [
+                safe_get('nombre'),
+                safe_get('apellido'),
+                safe_get('match_query'),
+                safe_get('match_result'),
+                score_val,
+                safe_get('match_result_values'),
+                safe_get('destTable'),
+                safe_get('sourceTable')
+            ])
+        except Exception as e:
+            print(f"Error insertando fila en Coincidentes: {e}\nFila: {fila}")
+    conn.commit()
+    cursor.close()
+    conn.close()
+    print(f"{len(coincidentes)} registros coincidentes insertados en la tabla Coincidentes de la base de datos crm.")
+
+def mostrar_coincidentes_recientes(host="localhost", user="root", password="", database="crm", limite=20):
+    import mysql.connector
+    conn = mysql.connector.connect(host=host, user=user, password=password, database=database)
+    cursor = conn.cursor(dictionary=True)
+    cursor.execute("SELECT * FROM Coincidentes ORDER BY fecha_insercion DESC LIMIT %s", (limite,))
+    resultados = cursor.fetchall()
+    cursor.close()
+    conn.close()
+    import pandas as pd
+    df = pd.DataFrame(resultados)
+    print(df)
+    return df
 from rapidfuzz import process, fuzz
 import mysql.connector
 import pandas as pd

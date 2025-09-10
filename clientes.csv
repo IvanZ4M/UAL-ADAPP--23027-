@@ -1,13 +1,13 @@
-nombre,apellido,match_query,match_result,score,match_result_values,destTable,sourceTable
-Michael,Jones,MichaelJones,MichaelRobinson,74.07407407407408,"{'first_name': 'Michael', 'last_name': 'Robinson'}",dbo.Usuarios,Clientes
-Herbert,Davis,HerbertDavis,RobertDavis,86.95652173913044,"{'first_name': 'Robert', 'last_name': 'Davis'}",dbo.Usuarios,Clientes
-Christian,Martin,ChristianMartin,ChristinaMiranda,70.96774193548387,"{'first_name': 'Christina', 'last_name': 'Miranda'}",dbo.Usuarios,Clientes
-Regina,Jones,ReginaJones,AdrianJones,72.72727272727273,"{'first_name': 'Adrian', 'last_name': 'Jones'}",dbo.Usuarios,Clientes
-Christopher,Morales,ChristopherMorales,ChristopherMcdonald,81.08108108108108,"{'first_name': 'Christopher', 'last_name': 'Mcdonald'}",dbo.Usuarios,Clientes
-Christopher,Moore,ChristopherMoore,ChristopherBowen,81.25,"{'first_name': 'Christopher', 'last_name': 'Bowen'}",dbo.Usuarios,Clientes
-Gina,Brown,GinaBrown,GeraldBrown,70.0,"{'first_name': 'Gerald', 'last_name': 'Brown'}",dbo.Usuarios,Clientes
-April,Gonzalez,AprilGonzalez,AprilGonzalez,100.0,"{'first_name': 'April', 'last_name': 'Gonzalez'}",dbo.Usuarios,Clientes
-Colton,Collins,ColtonCollins,ColtonCollins,100.0,"{'first_name': 'Colton', 'last_name': 'Collins'}",dbo.Usuarios,Clientes
+nombre,apellido,match_query,match_result,score,match_result_values,destTable,sourceTable,fecha_registro
+Michael,Jones,MichaelJones,MichaelRobinson,74.07407407407408,"{'first_name': 'Michael', 'last_name': 'Robinson'}",dbo.Usuarios,Clientes,09/09/2025 14:30
+Herbert,Davis,HerbertDavis,RobertDavis,86.95652173913044,"{'first_name': 'Robert', 'last_name': 'Davis'}",dbo.Usuarios,Clientes,09/09/2025 14:31
+Christian,Martin,ChristianMartin,ChristinaMiranda,70.96774193548387,"{'first_name': 'Christina', 'last_name': 'Miranda'}",dbo.Usuarios,Clientes,09/09/2025 14:32
+Regina,Jones,ReginaJones,AdrianJones,72.72727272727273,"{'first_name': 'Adrian', 'last_name': 'Jones'}",dbo.Usuarios,Clientes,09/09/2025 14:33
+Christopher,Morales,ChristopherMorales,ChristopherMcdonald,81.08108108108108,"{'first_name': 'Christopher', 'last_name': 'Mcdonald'}",dbo.Usuarios,Clientes,09/09/2025 14:34
+Christopher,Moore,ChristopherMoore,ChristopherBowen,81.25,"{'first_name': 'Christopher', 'last_name': 'Bowen'}",dbo.Usuarios,Clientes,09/09/2025 14:35
+Gina,Brown,GinaBrown,GeraldBrown,70.0,"{'first_name': 'Gerald', 'last_name': 'Brown'}",dbo.Usuarios,Clientes,09/09/2025 14:36
+April,Gonzalez,AprilGonzalez,AprilGonzalez,100.0,"{'first_name': 'April', 'last_name': 'Gonzalez'}",dbo.Usuarios,Clientes,09/09/2025 14:37
+Colton,Collins,ColtonCollins,ColtonCollins,100.0,"{'first_name': 'Colton', 'last_name': 'Collins'}",dbo.Usuarios,Clientes,09/09/2025 14:38
 Joseph,Yang,JosephYang,JosephYang,100.0,"{'first_name': 'Joseph', 'last_name': 'Yang'}",dbo.Usuarios,Clientes
 Michelle,Logan,MichelleLogan,MichelleLogan,100.0,"{'first_name': 'Michelle', 'last_name': 'Logan'}",dbo.Usuarios,Clientes
 Mary,Pollard,MaryPollard,MaryPollard,100.0,"{'first_name': 'Mary', 'last_name': 'Pollard'}",dbo.Usuarios,Clientes

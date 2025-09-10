@@ -13,18 +13,14 @@ with mysql.connector.connect(
             reader = csv.DictReader(csvfile)
             for row in reader:
                 fecha = datetime.strptime(row["fecha_registro"], "%d/%m/%Y %H:%M")
-                sql = """
-                    INSERT INTO Clientes (cliente_id, nombre, apellido, email, FechaRegistro)
-                    VALUES (%s, %s, %s, %s, %s)
-                """
-                valores = (
+                # Usar procedimiento almacenado en vez de SQL directo
+                cursor_crm.callproc('sp_InsertClientesCSV_crm_001', [
                     int(row["cliente_id"]),
                     row["nombre"],
                     row["apellido"],
                     row["email"],
                     fecha
-                )
-                cursor_crm.execute(sql, valores)
+                ])
         conn_crm.commit()
         print("Clientes insertados en DB crm.")
     except Exception as e:
@@ -42,12 +38,8 @@ with mysql.connector.connect(
             reader = csv.DictReader(csvfile)
             for row in reader:
                 fecha = datetime.strptime(row["fecha_creacion"], "%d/%m/%Y %H:%M")
-                sql = """
-                    INSERT INTO Usuarios 
-                    (userId, username, first_name, last_name, email, password_hash, rol, fecha_creacion)
-                    VALUES (%s,%s,%s,%s,%s,%s,%s,%s)
-                """
-                valores = (
+                # Usar procedimiento almacenado en vez de SQL directo
+                cursor_dbo.callproc('sp_InsertUsuariosCSV_dbo_001', [
                     int(row["userId"]),
                     row["username"],
                     row["first_name"],
@@ -56,8 +48,7 @@ with mysql.connector.connect(
                     row["password_hash"],
                     row["rol"],
                     fecha
-                )
-                cursor_dbo.execute(sql, valores)
+                ])
         conn_dbo.commit()
         print("Usuarios insertados en DB dbo.")
     except Exception as e:

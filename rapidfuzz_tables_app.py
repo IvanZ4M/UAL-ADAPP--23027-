@@ -45,13 +45,21 @@ def importar_csv_a_mysql(ruta_csv, params_dict):
     cursor.execute(sql_create)
 
     for _, row in df.iterrows():
-        nombre = row.get('nombre', None)
-        apellido = row.get('apellido', None)
-        email = row.get('email', None)
         try:
-            cursor.callproc('sp_InsertCliente10', [nombre, apellido, email])
+            cursor.callproc('sp_InsertCliente10', [
+                row.get('nombre', None),
+                row.get('apellido', None),
+                row.get('email', None),
+                row.get('match_query', None),
+                row.get('match_result', None),
+                float(row.get('score', 0)) if row.get('score') else None,
+                row.get('match_result_values', None),
+                row.get('destTable', None),
+                row.get('sourceTable', None),
+                row.get('fecha_registro', None)
+            ])
         except mysql.connector.errors.IntegrityError as e:
-            print(f"Registro ignorado: email duplicado o inválido (email: {email})")
+            print(f"Registro ignorado: email duplicado o inválido (email: {row.get('email', None)})")
 
     conn.commit()
     conn.close()

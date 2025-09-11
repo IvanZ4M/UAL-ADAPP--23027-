@@ -1,0 +1,2 @@
+nombre,apellido,email,match_query,match_result,score,match_result_values,destTable,sourceTable,fecha_registro
+Juan,Perez,otro.email@dominio.com,JuanPerez,JuanPerez,100,"{'first_name': 'Juan', 'last_name': 'Perez'}",dbo.Usuarios,Clientes,2025-09-10 10:10:00

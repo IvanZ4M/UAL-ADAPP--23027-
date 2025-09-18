@@ -11,21 +11,17 @@ CREATE PROCEDURE sp_InsertUsuariosCSV_dbo_001(
     IN p_fecha_creacion DATETIME
 )
 BEGIN
-    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+    DECLARE CONTINUE HANDLER FOR SQLEXCEPTION
     BEGIN
-        -- Manejo de errores
         ROLLBACK;
-        RESIGNAL;
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Error al insertar/actualizar usuario';
     END;
     
     START TRANSACTION;
     
     -- Verificar si el userId ya existe
-    IF NOT EXISTS (SELECT 1 FROM Usuarios WHERE userId = p_userId) THEN
-        -- Insertar nuevo usuario
-        INSERT INTO Usuarios (userId, username, first_name, last_name, email, password_hash, rol, fecha_creacion)
-        VALUES (p_userId, p_username, p_first_name, p_last_name, p_email, p_password_hash, p_rol, p_fecha_creacion);
-    ELSE
+    IF EXISTS (SELECT 1 FROM Usuarios WHERE userId = p_userId) THEN
         -- Actualizar usuario existente
         UPDATE Usuarios 
         SET username = p_username,
@@ -36,6 +32,10 @@ BEGIN
             rol = p_rol,
             fecha_creacion = p_fecha_creacion
         WHERE userId = p_userId;
+    ELSE
+        -- Insertar nuevo usuario
+        INSERT INTO Usuarios (userId, username, first_name, last_name, email, password_hash, rol, fecha_creacion)
+        VALUES (p_userId, p_username, p_first_name, p_last_name, p_email, p_password_hash, p_rol, p_fecha_creacion);
     END IF;
     
     COMMIT;

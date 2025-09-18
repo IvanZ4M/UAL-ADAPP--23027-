@@ -8,21 +8,17 @@ CREATE PROCEDURE sp_InsertClientesCSV_crm_001(
     IN p_fecha_registro DATETIME
 )
 BEGIN
-    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+    DECLARE CONTINUE HANDLER FOR SQLEXCEPTION
     BEGIN
-        -- Manejo de errores
         ROLLBACK;
-        RESIGNAL;
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Error al insertar/actualizar cliente';
     END;
     
     START TRANSACTION;
     
     -- Verificar si el cliente_id ya existe
-    IF NOT EXISTS (SELECT 1 FROM Clientes WHERE cliente_id = p_cliente_id) THEN
-        -- Insertar nuevo cliente
-        INSERT INTO Clientes (cliente_id, nombre, apellido, email, FechaRegistro)
-        VALUES (p_cliente_id, p_nombre, p_apellido, p_email, p_fecha_registro);
-    ELSE
+    IF EXISTS (SELECT 1 FROM Clientes WHERE cliente_id = p_cliente_id) THEN
         -- Actualizar cliente existente
         UPDATE Clientes 
         SET nombre = p_nombre, 
@@ -30,6 +26,10 @@ BEGIN
             email = p_email, 
             FechaRegistro = p_fecha_registro
         WHERE cliente_id = p_cliente_id;
+    ELSE
+        -- Insertar nuevo cliente
+        INSERT INTO Clientes (cliente_id, nombre, apellido, email, FechaRegistro)
+        VALUES (p_cliente_id, p_nombre, p_apellido, p_email, p_fecha_registro);
     END IF;
     
     COMMIT;

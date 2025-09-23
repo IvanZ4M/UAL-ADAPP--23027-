@@ -3,7 +3,6 @@ def insertar_coincidentes_en_db(coincidentes, host="localhost", user="root", pas
     conn = mysql.connector.connect(host=host, user=user, password=password, database=database)
     cursor = conn.cursor()
     for fila in coincidentes:
-        # Limpiar y convertir el campo score (obligatorio)
         score_val = fila.get('score', 0)
         if isinstance(score_val, str):
             score_val = score_val.replace('%', '').strip()
@@ -11,7 +10,6 @@ def insertar_coincidentes_en_db(coincidentes, host="localhost", user="root", pas
                 score_val = float(score_val)
             except ValueError:
                 score_val = 0.0
-        # Usar None si el campo no existe
         def safe_get(key):
             return fila[key] if key in fila else None
         try:
@@ -44,6 +42,7 @@ def mostrar_coincidentes_recientes(host="localhost", user="root", password="", d
     df = pd.DataFrame(resultados)
     print(df)
     return df
+
 from rapidfuzz import process, fuzz
 import mysql.connector
 import pandas as pd
@@ -57,60 +56,46 @@ def connect_to_mysql(host, database, user, password=""):
         database=database
     )
 
-def fuzzy_match(queryRecord, choices, score_cutoff=0):
-    scorers = [fuzz.WRatio, fuzz.QRatio, fuzz.token_set_ratio, fuzz.ratio]
-    processor = lambda x: str(x).lower()
-    processed_query = processor(queryRecord)
-    choices_data = []
-
-    for choice in choices:
-        dict_choices = dict(choice)
-        queryMatch = ""
-        dict_match_records = {}
-        for k, v in dict_choices.items():
-            if k != "DestRecordId":
-                val = str(v) if v is not None else ""
-                queryMatch += val
-                dict_match_records[k] = v
-
-        choices_data.append({
-            'query_match': queryMatch,
-            'dest_record_id': dict_choices.get('DestRecordId'),
-            'match_record_values': dict_match_records
-        })
-
+def fuzzy_match(queryRecord, choices, score_cutoff=0, pesos=None):
     best_match = None
     best_score = score_cutoff
 
-    for scorer in scorers:
-        result = process.extractOne(
-            query=processed_query,
-            choices=[item['query_match'] for item in choices_data],
-            scorer=scorer,
-            score_cutoff=score_cutoff,
-            processor=processor
-        )
-
-        if result:
-            match_value, score, index = result
-            if score >= best_score:
-                matched_item = choices_data[index]
-                best_match = {
-                    'match_query': queryRecord,
-                    'match_result': match_value,
-                    'score': score,
-                    'match_result_values': matched_item['match_record_values']
-                }
+    for choice in choices:
+        total_score = 0
+        total_peso = 0
+        campos_usados = []
+        if pesos:
+            for campo, peso in pesos.items():
+                valor_query = str(queryRecord.get(campo, "")).lower()
+                valor_choice = str(choice.get(campo, "")).lower()
+                campo_score = fuzz.ratio(valor_query, valor_choice)
+                total_score += campo_score * peso
+                total_peso += peso
+                campos_usados.append(campo)
+            score_final = total_score / total_peso if total_peso else 0
         else:
-            best_match = {
-                'match_query': queryRecord,
-                'match_result': None,
-                'score': 0,
-                'match_result_values': {}
-            }
-    return best_match
+            score_final = fuzz.ratio(str(queryRecord), " ".join([str(v) for v in choice.values()]))
 
-def execute_dynamic_matching(params_dict, score_cutoff=0):
+        if score_final >= best_score:
+            best_score = score_final
+            best_match = {
+                'match_query': " ".join([str(queryRecord.get(c, "")) for c in pesos.keys()]) if pesos else str(queryRecord),
+                'match_result': " ".join([str(choice.get(c, "")) for c in pesos.keys()]) if pesos else " ".join([str(v) for v in choice.values()]),
+                'score': score_final,
+                'match_result_values': {k: choice.get(k, "") for k in pesos.keys()} if pesos else choice
+            }
+    # MODIFICACIÓN: Siempre retorna un diccionario, nunca None
+    if best_match is not None:
+        return best_match
+    else:
+        return {
+            'match_query': "",
+            'match_result': "",
+            'score': 0,
+            'match_result_values': {k: "" for k in pesos.keys()} if pesos else {},
+        }
+
+def execute_dynamic_matching(params_dict, score_cutoff=0, pesos=None):
     conn = connect_to_mysql(
         host=params_dict.get("host", "localhost"),
         database=params_dict.get("database", ""),
@@ -143,21 +128,23 @@ def execute_dynamic_matching(params_dict, score_cutoff=0):
     matching_records = []
 
     for record in source_data:
-        dict_query_records = {}
-        query = ""
-
-        for src_col in params_dict['src_dest_mappings'].keys():
-            val = record.get(src_col)
-            query += str(val) if val is not None else ""
-            dict_query_records[src_col] = val
-
-        fm = fuzzy_match(query, dest_data, score_cutoff)
-        dict_query_records.update(fm)
-        dict_query_records.update({
+        query_dict = {}
+        for src_col, dest_col in params_dict['src_dest_mappings'].items():
+            query_dict[src_col] = record.get(src_col)
+        # Prepara los choices para que los nombres coincidan con los src_col
+        choices_mapeados = []
+        for dest_row in dest_data:
+            choice_dict = {}
+            for src_col, dest_col in params_dict['src_dest_mappings'].items():
+                choice_dict[src_col] = dest_row.get(dest_col)
+            choices_mapeados.append(choice_dict)
+        fm = fuzzy_match(query_dict, choices_mapeados, score_cutoff, pesos)
+        record.update(fm)
+        record.update({
             'destTable': params_dict['destTable'],
             'sourceTable': params_dict['sourceTable']
         })
-        matching_records.append(dict_query_records)
+        matching_records.append(record)
 
     return matching_records
 

@@ -2,6 +2,7 @@ import pandas as pd
 import mysql.connector
 import os
 from fuzzy_utils import execute_dynamic_matching, display_results, export_results_to_csv, export_results_to_excel, separar_registros_coincidentes, insertar_coincidentes_en_db, mostrar_coincidentes_recientes
+from config_loader import cargar_pesos_config
 
 def importar_csv_a_mysql(ruta_csv, params_dict):
     """
@@ -119,15 +120,27 @@ params_dict = {
     "database": "crm",    
     "user": "root",
     "password": "",     
-    "sourceTable": "Clientes",
+    "sourceTable": "clientes10",
     "destTable": "dbo.Usuarios", 
     "src_dest_mappings": {
         "nombre": "first_name",
-        "apellido": "last_name"
+        "apellido": "last_name",
+        "email": "email"
     }
 }
 
-resultados = execute_dynamic_matching(params_dict, score_cutoff=70)
+# Cargar los pesos desde el archivo y la base de datos
+db_params = {
+    "host": "localhost",
+    "user": "root",
+    "password": "",
+    "database": "crm"
+}
+pesos_columnas = cargar_pesos_config("config_pesos.json", db_params)
+
+# Ejecutar el matching usando los pesos cargados
+resultados = execute_dynamic_matching(params_dict, score_cutoff=70, pesos=pesos_columnas)
+print("DEBUG pesos:", pesos_columnas)
 filtro = [r for r in resultados if r.get('score', 0) >= 70]
 
 for fila in filtro:
@@ -195,7 +208,6 @@ else:
             print(f"Valor no válido. Se exportarán todas las filas coincidentes ({len(coincidentes)}).")
             datos_a_exportar = coincidentes
 
-
         datos_a_exportar_final = []
         for fila in datos_a_exportar:
             nueva_fila = {}
@@ -208,7 +220,6 @@ else:
                     nueva_fila[nombres_columnas[i]] = fila.get(col, '')
             datos_a_exportar_final.append(nueva_fila)
 
-
         if not datos_a_exportar_final:
             print("No hay filas seleccionadas para exportar. La exportación ha sido cancelada.")
         else:
@@ -219,7 +230,6 @@ else:
                 export_results_to_excel(datos_a_exportar_final, filename=nombre_archivo)
             else:
                 print("Formato de exportación no válido. No se exportarán los resultados.")
-
 
             insertar_coincidentes_en_db(datos_a_exportar_final)
             print("\nTodos los datos seleccionados han sido insertados en la tabla Coincidentes de la base de datos CRM.")
